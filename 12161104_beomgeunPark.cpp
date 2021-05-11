@@ -48,6 +48,16 @@ public:
 		this->address = _address_xy;
 		this->record = _record;
 	} // 환자 정보를 입력받아 환자 객체를 생성하는 생성자 멤버 함수
+
+	void setDiseaseName(string _diseaseName) {
+		this->record->diseaseName = _diseaseName;
+	}
+
+	void setPrice(int _price) {
+		this->record->price = _price;
+	}
+
+
 };
 
 class Node {
@@ -134,6 +144,7 @@ public:
 		}
 		return tempCnt_right;
 	}
+
 	void query_I(int _id, string _name, string _phoneNumber, int _addressX, int _addressY, string _diseaseName, int _price) {
 		// insert (K N H Ax Ay DI C)쿼리에 관한 내용
 		// parameter로 patient 객체 생성하고, 트리에 삽입하는 과정(red-black tree)
@@ -175,15 +186,24 @@ public:
 
 	void query_A(int _id, string _diseaseName, int _price) {
 		//-질의형식: “A K DI C”
-		//	A : 특정 환자에 대해 새로운 진료 정보를 추가하는 질의를 나타내는 기호
-		//	K : 환자번호
-		//	DI : 병명
-		//	C : 진료비
-		//	- 출력형식 : “D” 또는 “Not found”
-		//	D : 트리에서 환자 정보가 저장된 노드의 깊이
+		//	A : 특정 환자에 대해 새로운 진료 정보를 추가하는 질의를 나타내는 기호		//	K : 환자번호		//	DI : 병명		//	C : 진료비
+		//	- 출력형식 : “D” 또는 “Not found”		//	D : 트리에서 환자 정보가 저장된 노드의 깊이
 		//	- 설명 : 해당 환자를 탐색하여 입력받은 진료 내용을 진료기록에 추가하고, 환자에 대한 노드의
 		//	깊이를 출력한다.만약 환자가 존재하지 않는 경우, “Not found”를 출력한다.
-
+		Node* findNode = find(_id);
+		if (findNode == NULL) {
+			cout << "Not found" << "\n";
+		}
+		else {
+			Patient* p = findNode->patient;
+			//진료기록에 추가하라는게 기록 1, 2, 3을 다 갖고 있어야 하나? 아니면 덮어쓰기하라는건지?
+			// 추가하는거면 class Record vector로 변경 후 push_back으로 진행하고, 검색할때 vector.back()으로 참조해야할듯
+			// 일단은 overwrite 버전
+			p->setDiseaseName(_diseaseName);
+			p->setPrice(_price);
+			cout << findNode->depth <<"\n";
+		}
+		return;
 	}
 
 	void query_E(string _diseaseName) {
