@@ -34,13 +34,13 @@ public:
 	int id; // 환자번호 (기준키, 유일함): 1,000,000 ~ 1,999,999 사이의 정수. 
 	string name; // 이름 : 공백 없는 20 bytes 이내의 문자열.예) “Mary”
 	string phoneNumber; // 연락처 : 회원의 전화번호(공백 없는 11 bytes 이내의 문자열).예) “01012345678”
-	Adress_XY address; // 주소 좌표(x, y) : x와 y는 각각 0 ~10, 000 사이의 임의의 정수.
-	Record record; //진료기록 : 아래 정보들의 나열 (	-병명 : 공백 없는 20 bytes 이내의 문자열.예) “Headache”, 진료비: 10, 000 ~100, 000 사이의 정수)
+	Adress_XY  * address; // 주소 좌표(x, y) : x와 y는 각각 0 ~10, 000 사이의 임의의 정수.
+	Record  * record; //진료기록 : 아래 정보들의 나열 (	-병명 : 공백 없는 20 bytes 이내의 문자열.예) “Headache”, 진료비: 10, 000 ~100, 000 사이의 정수)
 	// 환자 정보를 담을 멤버 변수
 
 	Patient(int _id, string _name, string _phoneNumber, int _addressX, int _addressY, string _diseaseName, int _price) {
-		Adress_XY _address_xy(_addressX, _addressY); // 클래스 객체 생성
-		Record _record(_diseaseName, _price);// 클래스 객체 생성
+		Adress_XY * _address_xy = new Adress_XY(_addressX, _addressY); // 클래스 객체 생성
+		Record  * _record = new Record(_diseaseName, _price);// 클래스 객체 생성
 
 		this->id = _id;
 		this->name = _name;
@@ -52,21 +52,68 @@ public:
 
 class Node {
 public:
-	Patient patient;
+	Patient * patient;
 	Node* parent;
 	Node* left;
 	Node* right;
 	int depth;
 
-	Node(Patient _data) {
+	Node(Patient * _data) {
 		this->patient = _data;
 		parent = left = right = NULL;
+		depth = 0;
 	}
 };
 
 class Red_BlackTree {
 public:
-	Patient* root;
+	Node* root;
+	
+	Red_BlackTree() {
+		this->root = NULL;
+	}
+
+	void insert(Node* insert_node) {
+		if (root == NULL) { // 빈 트리일 경우 root에 insert해준다.
+			root = insert_node;
+		}
+		else { // root가 있다면 자신의 자리를 찾아서 insert
+			Node* curNode = root;
+			Node* upperNode = NULL;
+			bool findFlag = false;
+			while (curNode != NULL) {
+				upperNode = curNode;
+				if (curNode->patient->id == insert_node->patient->id) {
+					findFlag = true;
+					int depth = curNode->depth;
+					break;
+				}
+				else if (curNode->patient->id < insert_node->patient->id) {
+					curNode = curNode->left;
+				}
+				else if (curNode->patient->id > insert_node->patient->id) {
+					curNode = curNode->right;
+				}
+			}
+		}
+	}
+
+	Node* find(int find_id) { // red-black tree의 find는 binary search tree의 find와 동일하다.
+		Node* curNode = root;
+		while (curNode != NULL) {
+			if (curNode->patient->id == find_id) {
+				return curNode;
+			}
+			else if (curNode->patient->id < find_id) {
+				curNode = curNode->left;
+			}
+			else if (curNode->patient->id > find_id) {
+				curNode = curNode->right;
+			}
+		}
+		//while문이 끝나면 찾지 못한 것이다.
+		return NULL;
+	}
 
 	void query_I(int _id, string _name, string _phoneNumber, int _addressX, int _addressY, string _diseaseName, int _price) {
 		// insert (K N H Ax Ay DI C)쿼리에 관한 내용
@@ -93,13 +140,18 @@ public:
 	//F: 특정 환자를 검색하는 질의를 나타내는 기호
 	//	K : 환자번호
 	//	- 출력형식 : “D N H Ax Ay” 또는 “Not found”
-	//	D : 트리에서 환자 정보가 저장된 노드의 깊이
-	//	N : 이름
-	//	H : 연락처
-	//	Ax : 주소의 x 좌표
-	//	Ay : 주소의 y 좌표
+	//	D : 트리에서 환자 정보가 저장된 노드의 깊이 	//	N : 이름 	//	H : 연락처 	//	Ax : 주소의 x 좌표 	//	Ay : 주소의 y 좌표
 	//	- 설명 : 해당 환자를 탐색하여 존재하면 환자의 정보를 출력한다.
 	//	만약 존재하지 않으면, “Not	found”(주의 : 대소문자, 띄어쓰기 등 정확히 일치시킬 것)를 출력한다.
+		Node* findNode = find(_id);
+		if (findNode == NULL) {
+			cout << "Not found" << "\n";
+		}
+		else {
+			Patient* p = findNode->patient;
+			cout << findNode->depth << " " << p->name << " " << p->phoneNumber << " " << p->address->x << " " << p->address->y << " " << "\n";
+		}
+		return;
 	}
 
 	void query_A(int _id, string _diseaseName, int _price) {
@@ -128,7 +180,32 @@ public:
 
 };
 
+int queryNum, input_id, input_addressX, input_addressY, input_price;
+string queryName, input_name, input_phoneNumber, input_diseaseName;
 
 int main() {
+	cin >> queryNum;
+	Red_BlackTree redblackTree;
 
+	for (int t = 0; t < queryNum; t++) {
+		cin >> queryName;
+
+		if (queryName == "I") {
+			cin >> input_id >> input_name >> input_phoneNumber >> input_addressX >> input_addressY >> input_diseaseName >> input_price;
+			redblackTree.query_I(input_id, input_name, input_phoneNumber, input_addressX, input_addressY, input_diseaseName, input_price);
+		}
+		else if (queryName == "F") {
+			cin >> input_id;
+			redblackTree.query_F(input_id);
+		}
+		else if (queryName == "A") {
+			cin >> input_id >> input_diseaseName >> input_price;
+			redblackTree.query_A(input_id, input_diseaseName, input_price);
+		}
+		else if (queryName == "E") {
+			cin >> input_diseaseName;
+			redblackTree.query_E(input_diseaseName);
+		}
+	}
+	return 0;
 }
