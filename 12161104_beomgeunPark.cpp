@@ -73,6 +73,10 @@ public:
 		this->root = NULL;
 	}
 
+	Node* getRoot() { // main에서 root를 받고 싶을때 사용
+		return root;
+	}
+
 	void insert(Node* insert_node) {
 		if (root == NULL) { // 빈 트리일 경우 root에 insert해준다.
 			root = insert_node;
@@ -115,6 +119,21 @@ public:
 		return NULL;
 	}
 
+	int traversal(Node* node, string _diseaseName, int cnt) { 
+		// 그래프를 전위순회하며 동일한 병명을 가진 노드의 수를 센다.
+		// 루트부터 시작해서 cnt를 변수로 가지고 들어간다.
+		// 만약 리프노드 이후 null노드이면 그대로 cnt를 반환
+		// 아니면 왼쪽을 순회한 cnt를 오른쪽 순회가 가지고 간다.
+		int tempCnt_left = cnt;
+		int tempCnt_right = cnt;
+		if (node != NULL) {
+			if (node->patient->record->diseaseName == _diseaseName)
+				cnt++;
+			tempCnt_left = traversal(node->left, _diseaseName, cnt);
+			tempCnt_right = traversal(node->right, _diseaseName, tempCnt_left);
+		}
+		return tempCnt_right;
+	}
 	void query_I(int _id, string _name, string _phoneNumber, int _addressX, int _addressY, string _diseaseName, int _price) {
 		// insert (K N H Ax Ay DI C)쿼리에 관한 내용
 		// parameter로 patient 객체 생성하고, 트리에 삽입하는 과정(red-black tree)
@@ -176,6 +195,7 @@ public:
 		//	환자의 수(T ≥ 0) - 설명 : 트리에 저장된 모든 환자들에 대해, 마지막으로 진단받은 병명이 입력으로 주어진 병명과
 		//	동일하면 집계하고, 집계된 수를 출력하여 유행성의 정도를 파악한다.편의상, 골절 같은 전염성이
 		//	없는 병명도 유행병으로 간주한다.
+		cout << traversal(root, _diseaseName, 0) << "\n"; // 트리를 순회하며 병명의 수를 집계한 후 출력한다.
 	}
 
 };
