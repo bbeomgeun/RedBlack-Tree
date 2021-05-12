@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <vector>
 
+#define NIL -1;
+
 using namespace std;
 
 enum class Color { // 노드의 color를 red와 black으로 제한하기 위한 enum class
@@ -75,15 +77,18 @@ public:
 
 	Node(Patient * _data) { 
 		this->patient = _data;
-		parent =NULL;
+		parent = left = right =NULL;
 		depth = 0;
-		left->setColor(Color::COLOR_BLACK);
-		right->setColor(Color::COLOR_BLACK);
+		// left right setcolor하면 null이라 오류남
 		this->setColor(Color::COLOR_RED);
 	} // 새 노드 추가 시, 해당 환자정보, depth = 0, red color, 자식노드 black으로 생성
 
-	void setColor(Color c) {
-		this->color = c;
+	void setColor(Color c) { // 리프노드를 위해
+		if (this == NULL) {
+			return;
+		}
+		else
+			this->color = c;
 	}
 
 	int getID() {
@@ -134,8 +139,11 @@ public:
 			return false;
 	}
 
-	bool isBlack(Node* curNode) { // 받은 node의 black 체크(블랙이면 true값)
-		return curNode->color == Color::COLOR_BLACK;
+	bool isBlack(Node* curNode) { // 받은 node의 black 체크(블랙이거나 리프노드(null)이면 true값)
+		if (curNode == NULL)
+			return true;
+		else
+			return curNode->color == Color::COLOR_BLACK;
 	}
 
 	Node* recoloring(Node* curNode) { // 기준 노드 z의 parent, grand, uncle의 색을 바꾼다. 포인터 연산이므로 값이 변경됨
@@ -150,6 +158,116 @@ public:
 		parentNode->setColor(Color::COLOR_BLACK);
 
 		return grandNode; // grand가 red로 바뀌는 케이스이므로 grand와 grand의 parent의 red를 비교해야함
+	}
+
+	void restructuring(Node* curNode) { // case 4개로 나눠서 트리를 수정해준다.
+		bool isRoot = false;
+
+		Node* grandNode = curNode->getGrandNode();
+		Node* parentNode = curNode->getParentNode();
+		Node* uncleNode = curNode->getUncleNode();
+		Node* grandParentNode = NULL; // grand가 루트이면 참조가 불가능하기에 NULL로 초기화
+
+		int grandParentID = -1; // grand가 루트이면 참조가 불가능하기에 -1로 초기화
+		int grandID = grandNode->getID();
+		int parentID = parentNode->getID();
+		int curID = curNode->getID();
+
+		if (grandNode == root) {
+			isRoot = true;
+		}
+		else { // grandNode가 루트가 아니면 현재 서브트리의 루트가 바뀌기 때문에 서브트리의 부모에 연결하기 위함
+			grandParentNode = grandNode->getParentNode(); 
+			grandParentID =  grandParentNode->getID();
+		}
+
+		if (grandID < curID && curID < parentID) { // case 1 curNode가 루트가 된다. grandNode가 leftchild, parentNode가 rightChild
+			if (!isRoot) {
+				if (grandParentID > curID) {
+					grandParentNode->left = curNode;
+				}
+				else {
+					grandParentNode->right = curNode;
+				}
+				curNode->parent = grandParentNode;
+			}
+			else {
+				curNode->parent = NULL; // curNode가 루트가 된다.
+			} // 여기까지 curNode와 grandParentNode의 관계 정리
+
+			grandNode->right = curNode->left;
+			curNode->left = grandNode;
+			grandNode->parent = curNode;
+			// 여기까지 curNode와 grandNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
+
+			parentNode->left = curNode->right;
+			curNode->right = parentNode;
+			parentNode->parent = curNode;
+			// 여기까지 curNode와 parentNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
+		}
+		else if (parentID < curID && curID < grandID) { // case 2 curNode가 루트가 된다. parentNode가 leftchild, grandNode가 rightChild
+			if (!isRoot) {
+				if (grandParentID > curID) {
+					grandParentNode->left = curNode;
+				}
+				else {
+					grandParentNode->right = curNode;
+				}
+				curNode->parent = grandParentNode;
+			}
+			else { 
+				curNode->parent = NULL; // curNode가 루트가 된다.
+			} // 여기까지 curNode와 grandParentNode의 관계 정리
+
+			parentNode->right = curNode->left;
+			curNode->left = parentNode;
+			parentNode->parent = curNode;
+			// 여기까지 curNode와 grandNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
+
+			grandNode->left = curNode->right;
+			curNode->right = grandNode;
+			grandNode->parent = curNode;
+			// 여기까지 curNode와 parentNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
+		}
+		else if (curID < parentID && parentID < grandID) { // case 3 parentNode가 루트가 된다. grandNode가 rightchild, curNode는 그대로 parent의 leftchild
+			if (!isRoot) {
+				if (grandParentID > parentID) {
+					grandParentNode->left = parentNode;
+				}
+				else {
+					grandParentNode->right = parentNode;
+				}
+				parentNode->parent = grandParentNode;
+			}
+			else {
+				parentNode->parent = NULL; // parentNode가 루트가 된다.
+			} // 여기까지 parentNode와 grandParentNode의 관계 정리
+
+			grandNode->left = parentNode->right;
+			parentNode->right = grandNode;
+			grandNode->parent = parentNode;
+			// 여기까지 curNode와 parentNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
+		}
+		else if (grandID < parentID && parentID < curID) { // case 4 parentNode가 루트가 된다. grandNode가 leftchild, curNode는 그대로 parent의 rightchild
+			if (!isRoot) {
+				if (grandParentID > parentID) {
+					grandParentNode->left = parentNode;
+				}
+				else {
+					grandParentNode->right = parentNode;
+				}
+				parentNode->parent = grandParentNode;
+			}
+			else {
+				parentNode->parent = NULL; // parentNode가 루트가 된다.
+			} // 여기까지 parentNode와 grandParentNode의 관계 정리
+
+			grandNode->right = parentNode->left;
+			parentNode->left = grandNode;
+			grandNode->parent = parentNode;
+			// 여기까지 curNode와 parentNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
+		}
+		return ;
 	}
 
 	Node* insert(Node* insert_node) { // insertNode : 해당 환자정보, depth = 0, 자신 : red color, 자식 : black으로 생성
@@ -189,8 +307,8 @@ public:
 			while (isDoubleRed(z)) { //복사해준 curNode를 기준으로 recoloring 시작
 				// 만약 z의 grand가 null인 경우의 예외처리를 하려했지만 그 경우는 z의 parent가 root(black)인 경우로 isDoubleRed가 무조건 false가 나온다.
 				if (isBlack((z->getUncleNode()))) { // uncle이 black이면 restructuring
-					//z = restructure(z)
-					return;
+					restructuring(z);
+					break;
 				}
 				else  { // uncle red이면 recoloring
 					z = recoloring(z); 
@@ -198,6 +316,7 @@ public:
 					//따라서 z는 grand가 되며 grand가 root가 될수도 있음 -> isDoubleRed함수에 root 예외처리 추가
 				}
 			}
+			return insert_node; // 일단 구조를 정리와 별개로 여기까지 온거면 정상 insert이므로 insert한 노드 리턴
 		}
 	}
 
