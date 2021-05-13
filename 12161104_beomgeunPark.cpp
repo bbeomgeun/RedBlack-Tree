@@ -165,7 +165,6 @@ public:
 
 		Node* grandNode = curNode->getGrandNode();
 		Node* parentNode = curNode->getParentNode();
-		Node* uncleNode = curNode->getUncleNode();
 		Node* grandParentNode = NULL; // grand가 루트이면 참조가 불가능하기에 NULL로 초기화
 
 		int grandParentID = -1; // grand가 루트이면 참조가 불가능하기에 -1로 초기화
@@ -193,6 +192,7 @@ public:
 			}
 			else {
 				curNode->parent = NULL; // curNode가 루트가 된다.
+				root = curNode; // 루트를 바꿔준다.
 			} // 여기까지 curNode와 grandParentNode의 관계 정리
 
 			grandNode->right = curNode->left;
@@ -204,6 +204,9 @@ public:
 			curNode->right = parentNode;
 			parentNode->parent = curNode;
 			// 여기까지 curNode와 parentNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
+			curNode->setColor(Color::COLOR_BLACK);
+			parentNode->setColor(Color::COLOR_RED);
+			grandNode->setColor(Color::COLOR_RED);
 		}
 		else if (parentID < curID && curID < grandID) { // case 2 curNode가 루트가 된다. parentNode가 leftchild, grandNode가 rightChild
 			if (!isRoot) {
@@ -217,6 +220,7 @@ public:
 			}
 			else { 
 				curNode->parent = NULL; // curNode가 루트가 된다.
+				root = curNode; // 루트를 바꿔준다.
 			} // 여기까지 curNode와 grandParentNode의 관계 정리
 
 			parentNode->right = curNode->left;
@@ -228,6 +232,9 @@ public:
 			curNode->right = grandNode;
 			grandNode->parent = curNode;
 			// 여기까지 curNode와 parentNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
+			curNode->setColor(Color::COLOR_BLACK);
+			parentNode->setColor(Color::COLOR_RED);
+			grandNode->setColor(Color::COLOR_RED);
 		}
 		else if (curID < parentID && parentID < grandID) { // case 3 parentNode가 루트가 된다. grandNode가 rightchild, curNode는 그대로 parent의 leftchild
 			if (!isRoot) {
@@ -241,12 +248,16 @@ public:
 			}
 			else {
 				parentNode->parent = NULL; // parentNode가 루트가 된다.
+				root = parentNode; // 루트를 바꿔준다.
 			} // 여기까지 parentNode와 grandParentNode의 관계 정리
 
 			grandNode->left = parentNode->right;
 			parentNode->right = grandNode;
 			grandNode->parent = parentNode;
 			// 여기까지 curNode와 parentNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
+			parentNode->setColor(Color::COLOR_BLACK);
+			curNode->setColor(Color::COLOR_RED);
+			grandNode->setColor(Color::COLOR_RED);
 		}
 		else if (grandID < parentID && parentID < curID) { // case 4 parentNode가 루트가 된다. grandNode가 leftchild, curNode는 그대로 parent의 rightchild
 			if (!isRoot) {
@@ -260,12 +271,16 @@ public:
 			}
 			else {
 				parentNode->parent = NULL; // parentNode가 루트가 된다.
+				root = parentNode; // 루트를 바꿔준다.
 			} // 여기까지 parentNode와 grandParentNode의 관계 정리
 
 			grandNode->right = parentNode->left;
 			parentNode->left = grandNode;
 			grandNode->parent = parentNode;
 			// 여기까지 curNode와 parentNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
+			parentNode->setColor(Color::COLOR_BLACK);
+			curNode->setColor(Color::COLOR_RED);
+			grandNode->setColor(Color::COLOR_RED);
 		}
 		return ;
 	}
@@ -327,10 +342,10 @@ public:
 				return curNode;
 			}
 			else if (curNode->getID() < find_id) {
-				curNode = curNode->left;
+				curNode = curNode->right;
 			}
 			else if (curNode->getID() > find_id) {
-				curNode = curNode->right;
+				curNode = curNode->left;
 			}
 		}
 		//while문이 끝나면 찾지 못한 것이다.
@@ -421,10 +436,7 @@ public:
 		//	E : 마지막에 진료받은 병명을 기준으로 특정 병명을 수를 집계하는 질의를 나타내는 기호
 		//	DI : 병명
 		//	- 출력형식 : “T”
-		//	T : 모든 환자들의 진료기록에서 마지막으로 추가된 병명이 입력으로 주어진 병명과 같은
-		//	환자의 수(T ≥ 0) - 설명 : 트리에 저장된 모든 환자들에 대해, 마지막으로 진단받은 병명이 입력으로 주어진 병명과
-		//	동일하면 집계하고, 집계된 수를 출력하여 유행성의 정도를 파악한다.편의상, 골절 같은 전염성이
-		//	없는 병명도 유행병으로 간주한다.
+		//	T : 모든 환자들의 진료기록에서 마지막으로 추가된 병명이 입력으로 주어진 병명과 같은 환자의 수(T ≥ 0)
 		cout << traversal(root, _diseaseName, 0) << "\n"; // 트리를 순회하며 병명의 수를 집계한 후 출력한다.
 	}
 
