@@ -5,8 +5,6 @@
 #include <algorithm>
 #include <vector>
 
-#define NIL -1;
-
 using namespace std;
 
 enum class Color { // 노드의 color를 red와 black으로 제한하기 위한 enum class
@@ -160,7 +158,7 @@ public:
 		return grandNode; // grand가 red로 바뀌는 케이스이므로 grand와 grand의 parent의 red를 비교해야함
 	}
 
-	void restructuring(Node* curNode) { // case 4개로 나눠서 트리를 수정해준다.
+	Node* restructuring(Node* curNode) { // case 4개로 나눠서 트리를 수정해준다.
 		bool isRoot = false;
 
 		Node* grandNode = curNode->getGrandNode();
@@ -196,17 +194,23 @@ public:
 			} // 여기까지 curNode와 grandParentNode의 관계 정리
 
 			grandNode->right = curNode->left;
+			if (curNode->left != NULL)
+				curNode->left->parent = grandNode;
 			curNode->left = grandNode;
 			grandNode->parent = curNode;
 			// 여기까지 curNode와 grandNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
 
 			parentNode->left = curNode->right;
+			if (curNode->right != NULL)
+				curNode->right->parent = parentNode;
 			curNode->right = parentNode;
 			parentNode->parent = curNode;
 			// 여기까지 curNode와 parentNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
 			curNode->setColor(Color::COLOR_BLACK);
 			parentNode->setColor(Color::COLOR_RED);
 			grandNode->setColor(Color::COLOR_RED);
+
+			return curNode;
 		}
 		else if (parentID < curID && curID < grandID) { // case 2 curNode가 루트가 된다. parentNode가 leftchild, grandNode가 rightChild
 			if (!isRoot) {
@@ -224,17 +228,23 @@ public:
 			} // 여기까지 curNode와 grandParentNode의 관계 정리
 
 			parentNode->right = curNode->left;
+			if(curNode->left != NULL)
+				curNode->left->parent = parentNode;
 			curNode->left = parentNode;
 			parentNode->parent = curNode;
 			// 여기까지 curNode와 grandNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
 
 			grandNode->left = curNode->right;
+			if (curNode->right != NULL)
+				curNode->right->parent = grandNode;
 			curNode->right = grandNode;
 			grandNode->parent = curNode;
 			// 여기까지 curNode와 parentNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
 			curNode->setColor(Color::COLOR_BLACK);
 			parentNode->setColor(Color::COLOR_RED);
 			grandNode->setColor(Color::COLOR_RED);
+			
+			return curNode;
 		}
 		else if (curID < parentID && parentID < grandID) { // case 3 parentNode가 루트가 된다. grandNode가 rightchild, curNode는 그대로 parent의 leftchild
 			if (!isRoot) {
@@ -252,12 +262,16 @@ public:
 			} // 여기까지 parentNode와 grandParentNode의 관계 정리
 
 			grandNode->left = parentNode->right;
+			if (parentNode->right != NULL)
+				parentNode->right->parent = grandNode;
 			parentNode->right = grandNode;
 			grandNode->parent = parentNode;
 			// 여기까지 curNode와 parentNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
 			parentNode->setColor(Color::COLOR_BLACK);
 			curNode->setColor(Color::COLOR_RED);
 			grandNode->setColor(Color::COLOR_RED);
+
+			return parentNode;
 		}
 		else if (grandID < parentID && parentID < curID) { // case 4 parentNode가 루트가 된다. grandNode가 leftchild, curNode는 그대로 parent의 rightchild
 			if (!isRoot) {
@@ -275,15 +289,34 @@ public:
 			} // 여기까지 parentNode와 grandParentNode의 관계 정리
 
 			grandNode->right = parentNode->left;
+			if (parentNode->left != NULL)
+				parentNode->left->parent = grandNode;
 			parentNode->left = grandNode;
 			grandNode->parent = parentNode;
 			// 여기까지 curNode와 parentNode의 관계 정리(curNode의 자식 옮기고, 자식으로 연결하고, 부모로 연결하고)
 			parentNode->setColor(Color::COLOR_BLACK);
 			curNode->setColor(Color::COLOR_RED);
 			grandNode->setColor(Color::COLOR_RED);
+
+			return parentNode;
 		}
-		return ;
 	}
+
+	void depthTraversal(Node* newSubRoot, int _depth) {
+		Node * curNode = newSubRoot;
+		if (curNode != NULL) {
+			curNode->depth = _depth;
+			depthTraversal(curNode->left, _depth + 1);
+			depthTraversal(curNode->right, _depth + 1);
+		}
+	}
+	//void depthTraversal(Node * node, int depth) {
+	//	if (node != NULL) {
+	//		node->depth = depth;
+	//		depthTraversal(node->left, depth + 1);
+	//		depthTraversal(node->right, depth + 1);
+	//	}
+	//}
 
 	Node* insert(Node* insert_node) { // insertNode : 해당 환자정보, depth = 0, 자신 : red color, 자식 : black으로 생성
 		if (root == NULL) { // 빈 트리일 경우 root에 insert해준다.
@@ -322,7 +355,12 @@ public:
 			while (isDoubleRed(z)) { //복사해준 curNode를 기준으로 recoloring 시작
 				// 만약 z의 grand가 null인 경우의 예외처리를 하려했지만 그 경우는 z의 parent가 root(black)인 경우로 isDoubleRed가 무조건 false가 나온다.
 				if (isBlack((z->getUncleNode()))) { // uncle이 black이면 restructuring
-					restructuring(z);
+					Node * newSubRoot = restructuring(z); // 새로 루트가 된 노드를 리턴
+					// restructuring 이후 해당 subtree의 depth를 업데이트해준다.
+					if (newSubRoot == root) // 루트면 depth 0부터 전체 업데이트
+						depthTraversal(newSubRoot, 0);
+					else // 아니면 서브트리의 부모의 depth+1를 받아서 업데이트
+						depthTraversal(newSubRoot, newSubRoot->getParentNode()->depth+1);
 					break;
 				}
 				else  { // uncle red이면 recoloring
@@ -451,7 +489,7 @@ int main() {
 
 	for (int t = 0; t < queryNum; t++) {
 		cin >> queryName;
-
+		//cout << "no" << t + 1 << " ";
 		if (queryName == "I") {
 			cin >> input_id >> input_name >> input_phoneNumber >> input_addressX >> input_addressY >> input_diseaseName >> input_price;
 			redblackTree.query_I(input_id, input_name, input_phoneNumber, input_addressX, input_addressY, input_diseaseName, input_price);
