@@ -6,6 +6,7 @@
 #include <map>
 #include <stack>
 
+
 #define MAX 1000000 // 10^6
 #define INF 987654321
 
@@ -51,12 +52,14 @@ public:
 	map<int, vector<pair<int, int>>> adjacencyList;
 	AreaInfo* indexArray[MAX]; // 지역번호 100000~999999
 	pair<int, int> parent_id[MAX]; // 부모번호와 최단거리
-	bool fringeCheck[MAX];
+	//bool fringeCheck[MAX];
 	int distanceArray[MAX];
+	int countTreeVertex;
 
 	Graph() {
-		memset(fringeCheck, false, sizeof(bool) * MAX);
-		memset(distanceArray, -1, sizeof(int) * MAX);
+		//memset(fringeCheck, false, sizeof(bool) * MAX);
+		//memset(distanceArray, -1, sizeof(int) * MAX);
+		countTreeVertex = 0;
 	}
 
 	void insertVertex(int _id, string _name, bool _flood) {
@@ -85,6 +88,7 @@ public:
 
 	pair<int, int>* dijkstra_A(int from_id, int to_id) { // 최단거리
 		priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq; //weight, id
+		countTreeVertex = 0;
 
 		for (int i = 0; i < MAX; i++) {
 			distanceArray[i] = INF;
@@ -93,13 +97,13 @@ public:
 		pq.push(make_pair(0, from_id));
 		distanceArray[from_id] = 0;
 		parent_id[from_id] = make_pair(-1, 0);
-		fringeCheck[from_id] = true;
 
 		while (!pq.empty()) {
 			int distance = pq.top().first;
 			int here = pq.top().second;
 			//AreaInfo* now_vertex = getVertex(here);
 			pq.pop();
+			countTreeVertex++;
 
 			if (here == to_id) {
 				return parent_id;
@@ -113,6 +117,7 @@ public:
 					distanceArray[next] = distance + weight;	  // decreaseKey
 					pq.push(make_pair(distanceArray[next], next));
 					parent_id[next] = make_pair(here, distanceArray[next]);
+				
 				}
 			}
 		}
@@ -127,12 +132,8 @@ public:
 			cout << "None" << "\n";
 		}
 		else {
-			stack<int> st;
 
-			for (int i = _toID; i != -1; i = resultParentArray[i].first) {
-				st.push(i);
-			}
-			cout << st.size() << " " << minimalDistance << " " << getVertex(_fromID)->areaName << " " << getVertex(_toID)->areaName << "\n";
+			cout << countTreeVertex << " " << minimalDistance << " " << getVertex(_fromID)->areaName << " " << getVertex(_toID)->areaName << "\n";
 			/*출력형식: “N W SN DN” or “None”
 				N : 출발지부터 목적지까지 Tree vertex들의 set에 추가된 지역들의 수
 				W : 출발지부터 목적지까지의 최단거리
@@ -153,7 +154,8 @@ public:
 			for (int i = _toID; i != -1; i = resultParentArray[i].first) {
 				st.push(i);
 			}
-			cout << st.size() << " ";
+
+			cout << countTreeVertex << " ";
 			while (!st.empty()) {
 				cout << st.top() << " ";
 				st.pop();
