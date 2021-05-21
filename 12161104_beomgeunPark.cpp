@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <queue>
-#include <map>
+#include <unordered_map>
 #include <stack>
 
 
@@ -31,48 +31,27 @@ public:
 	} // 생성자
 };
 
-class RoadInfo { // 두 지역 간 도로 정보 -> edge
-public:
-	int fromID; // 지역번호 1
-	int toID; // 지역번호 2
-	int weight; // 도로의 거리
-
-	RoadInfo(int _fromID, int _toID, int _weight) {
-		this->fromID = _fromID;
-		this->toID = _toID;
-		this->weight = _weight;
-	} // 생성자
-};
-
 class Graph { // 무향그래프
 	// 먼저 입력받는 지역 정보를 저장해둬야하고, 연결정보를 받으면 연결된 지역끼리 묶고
 	// 그 이후 dijkstra를 돌리면 된다(최단거리 및 최단경로)
 public:
-	//map<AreaInfo * , vector<pair<int, AreaInfo * >>> adjacencyList;
-	map<int, vector<pair<int, int>>> adjacencyList;
+	unordered_map<int, vector<pair<int, int>>> adjacencyList;
 	AreaInfo* indexArray[MAX]; // 지역번호 100000~999999
 	pair<int, int> parent_id[MAX]; // 부모번호와 최단거리
-	//bool fringeCheck[MAX];
 	int distanceArray[MAX];
 	int countTreeVertex;
+	Status statusCheck[MAX];
 
 	Graph() {
-		//memset(fringeCheck, false, sizeof(bool) * MAX);
-		//memset(distanceArray, -1, sizeof(int) * MAX);
 		countTreeVertex = 0;
 	}
 
 	void insertVertex(int _id, string _name, bool _flood) {
 		AreaInfo* vertex = new AreaInfo(_id, _name, _flood); // 입력받은 정보로 vertex 생성
-		//this->adjacencyList[vertex]; // 인접리스트 map에 저장
 		indexArray[_id] = vertex; // id와 vertex 정보 매핑
 	} // vertex 정보 저장 및 index 정보 저장
 
 	void connectVertex(int _fromID, int _toID, int _weight) {
-		/*AreaInfo *from_vertex = indexArray[_fromID];
-		AreaInfo *to_vertex = indexArray[_toID];
-		adjacencyList[from_vertex].push_back(make_pair(_weight, to_vertex));
-		adjacencyList[to_vertex].push_back(make_pair(_weight, from_vertex));*/ // AreaInfo class point 저장 버전
 		adjacencyList[_fromID].push_back(make_pair(_weight, _toID));
 		adjacencyList[_toID].push_back(make_pair(_weight, _fromID));
 		// 무향그래프이므로 양쪽 모두 연결
@@ -92,8 +71,9 @@ public:
 
 		for (int i = 0; i < MAX; i++) {
 			distanceArray[i] = INF;
+			statusCheck[i] = Status::UNSEEN;
 		}
-
+		statusCheck[from_id] = Status::TREE;
 		pq.push(make_pair(0, from_id));
 		distanceArray[from_id] = 0;
 		parent_id[from_id] = make_pair(-1, 0);
@@ -101,9 +81,9 @@ public:
 		while (!pq.empty()) {
 			int distance = pq.top().first;
 			int here = pq.top().second;
-			//AreaInfo* now_vertex = getVertex(here);
 			pq.pop();
 			countTreeVertex++;
+			statusCheck[from_id] = Status::TREE;
 
 			if (here == to_id) {
 				return parent_id;
@@ -113,11 +93,11 @@ public:
 				int next = adjacencyList[here][i].second;
 				int weight = adjacencyList[here][i].first;
 
-				if (distanceArray[next] > distance + weight && !isFlooding(next)) { // 거리가 update되면서 범람되지 않은 구역일때
+				if (distanceArray[next] > (distance + weight) && !isFlooding(next) && (statusCheck[next] != Status::TREE)) { // 거리가 update되면서 범람되지 않은 구역일때
 					distanceArray[next] = distance + weight;	  // decreaseKey
 					pq.push(make_pair(distanceArray[next], next));
 					parent_id[next] = make_pair(here, distanceArray[next]);
-				
+					
 				}
 			}
 		}
